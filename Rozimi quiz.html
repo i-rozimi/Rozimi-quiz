@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 ROZIMI QUIZ</title>
+<style>
+  body {
+    margin:0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .container {
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+  }
+  .panel {
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+  }
+  button {
+    background-color: #ff4757;
+    border: none;
+    padding: 12px 20px;
+    margin: 10px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover {
+    background-color: #ff6b81;
+  }
+  .correct {background-color:#2ed573 !important;}
+  .wrong {background-color:#ff4757 !important;}
+  #quiz, #results {display:none;}
+  #level {font-weight:bold; margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Accueil -->
+  <div id="start" class="panel">
+    <h1>🎮 ROZIMI QUIZ</h1>
+    <p>Réponds correctement aux 5 questions pour passer au niveau suivant !</p>
+    <button onclick="startQuiz()">Commencer</button>
+  </div>
+
+  <!-- Quiz -->
+  <div id="quiz" class="panel">
+    <div id="level">Niveau 1</div>
+    <div id="question" style="font-size:18px;margin-bottom:15px;"></div>
+    <div id="options"></div>
+    <div style="margin-top:15px;">Score: <span id="score">0</span></div>
+  </div>
+
+  <!-- Résultats -->
+  <div id="results" class="panel">
+    <h2>🎉 Résultat</h2>
+    <p id="finalScore"></p>
+    <button onclick="nextLevel()" id="nextLevelBtn">Niveau suivant</button>
+    <button onclick="restartQuiz()" id="restartBtn" style="display:none;">Rejouer</button>
+  </div>
+</div>
+
+<audio id="correctSound" src="https://freesound.org/data/previews/320/320181_5260876-lq.mp3"></audio>
+<audio id="wrongSound" src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3"></audio>
+
+<script>
+// Questions aléatoires culture générale
+const allQuestions = [
+  {q: "Quelle est la capitale de la France?", a:["Paris","Lyon","Marseille","Bordeaux"], answer: "Paris"},
+  {q: "Combien font 7 x 8?", a:["54","56","64","49"], answer: "56"},
+  {q: "Quel est le plus grand océan?", a:["Atlantique","Pacifique","Indien","Arctique"], answer: "Pacifique"},
+  {q: "Qui a écrit 'Les Misérables'?", a:["Victor Hugo","Émile Zola","Albert Camus","Balzac"], answer: "Victor Hugo"},
+  {q: "En quelle année l'homme a-t-il marché sur la Lune?", a:["1965","1969","1972","1960"], answer: "1969"},
+  {q: "Quelle est la langue officielle du Brésil?", a:["Espagnol","Portugais","Anglais","Français"], answer: "Portugais"},
+  {q: "Qui a peint la Joconde?", a:["Van Gogh","Michel-Ange","Leonardo da Vinci","Picasso"], answer: "Leonardo da Vinci"},
+  {q: "Combien de continents y a-t-il?", a:["5","6","7","8"], answer: "7"},
+  {q: "Quel est l'élément chimique du symbole 'O'?", a:["Or","Oxygène","Osmium","Oxalate"], answer: "Oxygène"},
+  {q: "Quel pays a inventé les pâtes?", a:["France","Italie","Chine","Grèce"], answer: "Italie"}
+];
+
+let currentLevel = 1;
+let levelQuestions = [];
+let currentQuestion = 0;
+let score = 0;
+const questionsPerLevel = 5;
+
+const startDiv = document.getElementById('start');
+const quizDiv = document.getElementById('quiz');
+const resultsDiv = document.getElementById('results');
+const questionEl = document.getElementById('question');
+const optionsEl = document.getElementById('options');
+const scoreEl = document.getElementById('score');
+const levelEl = document.getElementById('level');
+const finalScoreEl = document.getElementById('finalScore');
+const nextLevelBtn = document.getElementById('nextLevelBtn');
+const restartBtn = document.getElementById('restartBtn');
+const correctSound = document.getElementById('correctSound');
+const wrongSound = document.getElementById('wrongSound');
+
+function startQuiz(){
+  startDiv.style.display='none';
+  quizDiv.style.display='block';
+  score=0;
+  currentLevel=1;
+  startLevel();
+}
+
+function startLevel(){
+  levelEl.textContent = `Niveau ${currentLevel}`;
+  currentQuestion=0;
+  levelQuestions = getRandomQuestions(questionsPerLevel);
+  showQuestion();
+}
+
+function getRandomQuestions(n){
+  let shuffled = [...allQuestions].sort(()=>0.5-Math.random());
+  return shuffled.slice(0,n);
+}
+
+function showQuestion(){
+  const q = levelQuestions[currentQuestion];
+  questionEl.textContent = q.q;
+  optionsEl.innerHTML = '';
+  q.a.sort(()=>0.5-Math.random()).forEach(option=>{
+    const btn = document.createElement('button');
+    btn.textContent = option;
+    btn.onclick = ()=> checkAnswer(option, btn);
+    optionsEl.appendChild(btn);
+  });
+}
+
+function checkAnswer(answer, btn){
+  const correct = levelQuestions[currentQuestion].answer;
+  if(answer===correct){
+    score++;
+    btn.classList.add('correct');
+    correctSound.play();
+  } else {
+    btn.classList.add('wrong');
+    wrongSound.play();
+  }
+  scoreEl.textContent = score;
+  setTimeout(()=>{
+    currentQuestion++;
+    if(currentQuestion<levelQuestions.length){
+      showQuestion();
+    } else {
+      endLevel();
+    }
+  },700);
+}
+
+function endLevel(){
+  quizDiv.style.display='none';
+  resultsDiv.style.display='block';
+  finalScoreEl.textContent = `Score: ${score} / ${questionsPerLevel}`;
+  if(score===questionsPerLevel){
+    nextLevelBtn.style.display='inline-block';
+    restartBtn.style.display='none';
+  } else {
+    nextLevelBtn.style.display='none';
+    restartBtn.style.display='inline-block';
+  }
+}
+
+function nextLevel(){
+  currentLevel++;
+  resultsDiv.style.display='none';
+  quizDiv.style.display='block';
+  score=0;
+  scoreEl.textContent=score;
+  startLevel();
+}
+
+function restartQuiz(){
+  resultsDiv.style.display='none';
+  startDiv.style.display='block';
+}
+</script>
+</body>
+</html>
